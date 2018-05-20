@@ -15,7 +15,7 @@ def createObjects(mode, numObject):
         elif mode == 'Cone':
             obj = cmds.polyCone()
         else: cmds.error("I don't know what to create!")
-            
+    
         objList.append(obj[0])
 
     cmds.select(objList)
@@ -60,7 +60,7 @@ def showWindow():
     
     for axis in 'xyz':
         cmds.text(label = '%s axis' % axis)
-        cmds.floatField('%sAxisFiled' % axis, value = random.uniform(0, 10))
+        cmds.floatField('%sAxisField' % axis, value = random.uniform(0, 10))
     
     cmds.setParent(frame)
     cmds.rowLayout(numberOfColumns = 2)
@@ -80,12 +80,12 @@ def onCreateClick(*args):
     numObjects = cmds.intField("numObjects", query = True, value = True)
 
     createObjects(mode, numObjects)
-    onCreateClick()
+    onRandomClick()
 
 def onRandomClick(*args):
     radio = cmds.radioCollection("randomMode", query = True, select = True)
     mode = cmds.radioButton(radio, query = True, label = True)
 
     for axis in 'xyz':
-        val = cmds.floatField("%sAxisField" % axis) 
-        randomize(minValue=val*-1, maxValue=val, mode = mode, axes = axis)
+        val = cmds.floatField('%sAxisField' % axis, query = True, value = True) 
+        randomize(minValue = val * -1, maxValue = val, mode = mode, axes = axis)
