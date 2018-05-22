@@ -78,22 +78,56 @@ def align(nodes = None, axis = 'x', mode = 'mid'):
 
 class Aligner(object):
     def __init__(self):
-        pass
+        name = "Aligner"
+        if cmds.window(name, query = True, exists = True):
+            cmds.deleteUI(name)
 
+        window = cmds.window(name)
+        self.buildUI()
+        cmds.showWindow()
+        cmds.window(window, e = True, resizeToFitChildren = True)  # e, edit.
     def buildUI(self):
+        column = cmds.columnLayout()
         # Add radio buttons for axis
+        cmds.frameLayout(label = "Choose an axis")
+
+        cmds.rowLayout(numberOfColumns = 3)
+        cmds.radioCollection()
+        self.xAsis = cmds.radioButton(label = 'x', select = True)
+        self.yAsis = cmds.radioButton(label = 'y')
+        self.zAsis = cmds.radioButton(label = 'z')
 
         # Add radio buttons for mode
+        cmds.setParent(column)
 
+        cmds.frameLayout(label = "Choose where to align")
+
+        cmds.rowLayout(numberOfColumns = 3)
+        cmds.radioCollection()
+        self.minMode = cmds.radioButton(label = 'min')
+        self.midMode = cmds.radioButton(label = 'mid', select = True)
+        self.maxMode = cmds.radioButton(label = 'max')
+        
         # add apply button
-
-        pass
+        cmds.setParent(column)
+        cmds.button(label = 'Align', command = self.onApplyClick)
 
     def onApplyClick(self, *args):
         # get the axis
-
+        if cmds.radioButton(self.xAsis, q = True, select = True):
+            axis = 'x'
+        elif cmds.radioButton(self.yAsis, q = True, select = True):
+            axis = 'y'
+        else:
+            axis = 'z'
+        
         # get the mode
-
+        if cmds.radioButton(self.minMode, q = True, select = True):
+            mode = 'min'
+        elif cmds.radioButton(self.midMode, q = True, select = True):
+            mode = 'mid'
+        else:
+            mode = 'max'
         #call the alignment function
-
-        pass
+        align(axis = axis, mode = mode)
+        
