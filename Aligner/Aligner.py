@@ -1,4 +1,5 @@
 from maya import cmds
+from functools import partial
 
 def align(nodes = None, axis = 'x', mode = 'mid'):
     # default node to selection if nothing provided
@@ -8,9 +9,20 @@ def align(nodes = None, axis = 'x', mode = 'mid'):
     if not nodes:
         cmds.error('Nothing selected or provied')
     
-    #print nodes
+    _nodes = []
+    for node in nodes:
+        if '.f[' in node:
+            node = cmds.polyListComponentConversion(node, fromFace = True, toVertex = True)
+        elif '.e[' in node:
+            node = cmds.polyListComponentConversion(node, fromEdge = True, toVertex = True)
+        
+        cmds.select(node)
+        node = cmds.ls(sl = True, fl = True)    #sl, select. fl, flatten
 
-    bboxes = {}
+        _nodes.extend(node)
+
+    nodes = _nodes
+
     if axis == 'x':
         start = 0
     elif axis == 'y':
@@ -24,15 +36,20 @@ def align(nodes = None, axis = 'x', mode = 'mid'):
     maxMode = mode == 'max'
     midMode = mode == 'mid'
 
+    bboxes = {}
     values = []
 
     # gets the dimension of our objects
     for node in nodes:
-        bbox = cmds.exactWorldBoundingBox(node)   # bbox, bounding box
+        if '.vtx[' in node:
+            ws = cmds.xform(node, q = True, t = True, ws = True)    # q, query. t, tranform. ws, world space
+            minValue = midValue = maxValue = ws[start]
+        else:
+            bbox = cmds.exactWorldBoundingBox(node)   # bbox, bounding box
 
-        minValue = bbox[start]
-        maxValue = bbox[start + 3]
-        midValue = (minValue + maxValue) / 2
+            minValue = bbox[start]
+            maxValue = bbox[start + 3]
+            midValue = (minValue + maxValue) / 2
 
         bboxes[node] = (minValue, midValue, maxValue)
 
@@ -91,26 +108,37 @@ class Aligner(object):
         # Add radio buttons for axis
         cmds.frameLayout(label = "Choose an axis")
 
-        cmds.rowLayout(numberOfColumns = 3)
         cmds.radioCollection()
         self.xAsis = cmds.radioButton(label = 'x', select = True)
         self.yAsis = cmds.radioButton(label = 'y')
         self.zAsis = cmds.radioButton(label = 'z')
+
+        cmds.gridLayout(numberOfColumns = 3, cellWidth = 50)
+        createIconButton('XAxis.png', command=partial(self.onOptionClick, self.xAsis))
+        createIconButton('YAxis.png', command=partial(self.onOptionClick, self.yAsis))
+        createIconButton('ZAxis.png', command=partial(self.onOptionClick, self.zAsis))
 
         # Add radio buttons for mode
         cmds.setParent(column)
 
         cmds.frameLayout(label = "Choose where to align")
 
-        cmds.rowLayout(numberOfColumns = 3)
         cmds.radioCollection()
         self.minMode = cmds.radioButton(label = 'min')
         self.midMode = cmds.radioButton(label = 'mid', select = True)
         self.maxMode = cmds.radioButton(label = 'max')
+
+        cmds.gridLayout(numberOfColumns = 3, cellWidth = 50)
+        createIconButton('MinAxis.png', command=partial(self.onOptionClick, self.minMode))
+        createIconButton('MidAxis.png', command=partial(self.onOptionClick, self.midMode))
+        createIconButton('MaxAxis.png', command=partial(self.onOptionClick, self.maxMode))
         
         # add apply button
         cmds.setParent(column)
-        cmds.button(label = 'Align', command = self.onApplyClick)
+        cmds.button(label = 'Align', command = self.onApplyClick, bgc = (0.2, 0.5, 0.9))
+
+    def onOptionClick(self, opt):
+        cmds.radioButton(opt, edit = True, select = True)
 
     def onApplyClick(self, *args):
         # get the axis
@@ -131,3 +159,16 @@ class Aligner(object):
         #call the alignment function
         align(axis = axis, mode = mode)
         
+def getIcon(icon):
+    import os
+    scripts = os.path.dirname(__file__)
+    icons = os.path.join(scripts, 'icons')
+
+    icon = os.path.join(icons, icon)
+    return icon
+
+def createIconButton(icon, command = None):
+    if command:
+        cmds.iconTextButton(image1 = getIcon(icon), width = 50, height = 50, command = command)
+    else:
+        cmds.iconTextButton(image1 = getIcon(icon), width = 50, height = 50)
